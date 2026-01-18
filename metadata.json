@@ -1,0 +1,12 @@
+{
+  "name": "chatsdk_module",
+  "version": "1.0.0",
+  "description": "ChatSDK module for Logos",
+  "author": "Logos Core Team",
+  "type": "core",
+  "category": "chat",
+  "main": "chatsdk_module_plugin",
+  "dependencies": [],
+  "include": ["libchat.so", "libchat.dylib", "libchat.dll"],
+  "capabilities": []
+}

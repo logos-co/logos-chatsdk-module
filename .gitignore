@@ -1,0 +1,33 @@
+# Build directories
+build/
+cmake-build-*/
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+# IDE/editor config with local paths
+.clangd
+compile_commands.json
+
+# Compiled objects
+*.o
+*.obj
+
+# Generated files
+moc_*.cpp
+*.moc
+
+# Nix
+result
+result-*
+.direnv/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
