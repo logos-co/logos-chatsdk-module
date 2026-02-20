@@ -16,7 +16,7 @@ ChatSDKModulePlugin::~ChatSDKModulePlugin()
 {
     // Clean up Chat context if it exists
     if (chatCtx) {
-        chat_destroy(chatCtx, nullptr, nullptr);
+        chat_destroy(chatCtx, destroy_callback, this);
         chatCtx = nullptr;
     }
     
@@ -32,6 +32,21 @@ void ChatSDKModulePlugin::initLogos(LogosAPI* logosAPIInstance) {
         delete logosAPI;
     }
     logosAPI = logosAPIInstance;
+}
+
+void ChatSDKModulePlugin::emitEvent(const QString& eventName, const QVariantList& data) {
+    if (!logosAPI) {
+        qWarning() << "ChatSDKModulePlugin: LogosAPI not available, cannot emit" << eventName;
+        return;
+    }
+
+    LogosAPIClient* client = logosAPI->getClient("chatsdk_module");
+    if (!client) {
+        qWarning() << "ChatSDKModulePlugin: Failed to get chatsdk_module client for event" << eventName;
+        return;
+    }
+
+    client->onEventResponse(this, eventName, data);
 }
 
 // ============================================================================
@@ -56,9 +71,7 @@ void ChatSDKModulePlugin::init_callback(int callerRet, const char* msg, size_t l
     eventData << message;                 // message (may be empty)
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkInitResult", eventData);
-    }
+    plugin->emitEvent("chatsdkInitResult", eventData);
 }
 
 void ChatSDKModulePlugin::start_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -79,9 +92,7 @@ void ChatSDKModulePlugin::start_callback(int callerRet, const char* msg, size_t 
     eventData << message;
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkStartResult", eventData);
-    }
+    plugin->emitEvent("chatsdkStartResult", eventData);
 }
 
 void ChatSDKModulePlugin::stop_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -102,9 +113,7 @@ void ChatSDKModulePlugin::stop_callback(int callerRet, const char* msg, size_t l
     eventData << message;
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkStopResult", eventData);
-    } 
+    plugin->emitEvent("chatsdkStopResult", eventData);
 }
 
 void ChatSDKModulePlugin::destroy_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -125,9 +134,7 @@ void ChatSDKModulePlugin::destroy_callback(int callerRet, const char* msg, size_
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkDestroyResult", eventData);
-        }
+        plugin->emitEvent("chatsdkDestroyResult", eventData);
     }
 }
 
@@ -152,7 +159,7 @@ void ChatSDKModulePlugin::event_callback(int callerRet, const char* msg, size_t 
             QJsonObject obj = doc.object();
             QString eventType = obj["eventType"].toString();
             
-            // Map libchat event types to Qt event names
+            // Map event types to Qt event names
             if (eventType == "new_message") {
                 eventName = "chatsdkNewMessage";
             } else if (eventType == "new_conversation") {
@@ -166,9 +173,7 @@ void ChatSDKModulePlugin::event_callback(int callerRet, const char* msg, size_t 
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, eventName, eventData);
-        }
+        plugin->emitEvent(eventName, eventData);
     }
 }
 
@@ -189,32 +194,7 @@ void ChatSDKModulePlugin::get_id_callback(int callerRet, const char* msg, size_t
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetIdResult", eventData);
-        }
-    }
-}
-
-void ChatSDKModulePlugin::get_default_inbox_id_callback(int callerRet, const char* msg, size_t len, void* userData)
-{
-    qDebug() << "ChatSDKModulePlugin::get_default_inbox_id_callback called with ret:" << callerRet;
-
-    ChatSDKModulePlugin* plugin = static_cast<ChatSDKModulePlugin*>(userData);
-    if (!plugin) {
-        qWarning() << "ChatSDKModulePlugin::get_default_inbox_id_callback: Invalid userData";
-        return;
-    }
-
-    if (msg && len > 0) {
-        QString message = QString::fromUtf8(msg, len);
-        
-        QVariantList eventData;
-        eventData << message;
-        eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
-
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetDefaultInboxIdResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetIdResult", eventData);
     }
 }
 
@@ -235,9 +215,7 @@ void ChatSDKModulePlugin::list_conversations_callback(int callerRet, const char*
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkListConversationsResult", eventData);
-        }
+        plugin->emitEvent("chatsdkListConversationsResult", eventData);
     }
 }
 
@@ -258,9 +236,7 @@ void ChatSDKModulePlugin::get_conversation_callback(int callerRet, const char* m
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetConversationResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetConversationResult", eventData);
     }
 }
 
@@ -282,9 +258,7 @@ void ChatSDKModulePlugin::new_private_conversation_callback(int callerRet, const
     eventData << conversationJson;                                        // conversation JSON
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkNewPrivateConversationResult", eventData);
-    }
+    plugin->emitEvent("chatsdkNewPrivateConversationResult", eventData);
 }
 
 void ChatSDKModulePlugin::send_message_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -306,9 +280,7 @@ void ChatSDKModulePlugin::send_message_callback(int callerRet, const char* msg, 
     eventData << resultJson;              // result JSON (may contain message ID)
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkSendMessageResult", eventData);
-    }
+    plugin->emitEvent("chatsdkSendMessageResult", eventData);
 }
 
 void ChatSDKModulePlugin::get_identity_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -328,9 +300,7 @@ void ChatSDKModulePlugin::get_identity_callback(int callerRet, const char* msg, 
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetIdentityResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetIdentityResult", eventData);
     }
 }
 
@@ -344,17 +314,15 @@ void ChatSDKModulePlugin::create_intro_bundle_callback(int callerRet, const char
         return;
     }
 
-    QString bundleJson = (msg && len > 0) ? QString::fromUtf8(msg, len) : "";
-    
+    QString bundleStr = (msg && len > 0) ? QString::fromUtf8(msg, len) : "";
+
     QVariantList eventData;
-    eventData << (callerRet == RET_OK && !bundleJson.isEmpty());  // success
-    eventData << callerRet;                                         // return code
-    eventData << bundleJson;                                        // bundle JSON
+    eventData << (callerRet == RET_OK && !bundleStr.isEmpty());  // success
+    eventData << callerRet;                                        // return code
+    eventData << bundleStr;                                        // intro bundle string
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkCreateIntroBundleResult", eventData);
-    }
+    plugin->emitEvent("chatsdkCreateIntroBundleResult", eventData);
 }
 
 // ============================================================================
@@ -480,26 +448,6 @@ bool ChatSDKModulePlugin::getId()
     }
 }
 
-bool ChatSDKModulePlugin::getDefaultInboxId()
-{
-    qDebug() << "ChatSDKModulePlugin::getDefaultInboxId called";
-    
-    if (!chatCtx) {
-        qWarning() << "ChatSDKModulePlugin: Cannot get default inbox ID - context not initialized";
-        return false;
-    }
-    
-    int result = chat_get_default_inbox_id(chatCtx, get_default_inbox_id_callback, this);
-    
-    if (result == RET_OK) {
-        qDebug() << "ChatSDKModulePlugin: Get default inbox ID initiated successfully";
-        return true;
-    } else {
-        qWarning() << "ChatSDKModulePlugin: Failed to get default inbox ID, error code:" << result;
-        return false;
-    }
-}
-
 // ============================================================================
 // Conversation Operations
 // ============================================================================
@@ -546,16 +494,16 @@ bool ChatSDKModulePlugin::getConversation(const QString &convoId)
     }
 }
 
-bool ChatSDKModulePlugin::newPrivateConversation(const QString &introBundleJson, const QString &contentHex)
+bool ChatSDKModulePlugin::newPrivateConversation(const QString &introBundleStr, const QString &contentHex)
 {
     qDebug() << "ChatSDKModulePlugin::newPrivateConversation called";
-    
+
     if (!chatCtx) {
         qWarning() << "ChatSDKModulePlugin: Cannot create new private conversation - context not initialized";
         return false;
     }
-    
-    QByteArray introBundleUtf8 = introBundleJson.toUtf8();
+
+    QByteArray introBundleUtf8 = introBundleStr.toUtf8();
     QByteArray contentUtf8 = contentHex.toUtf8();
     
     int result = chat_new_private_conversation(chatCtx, new_private_conversation_callback, this, introBundleUtf8.constData(), contentUtf8.constData());

@@ -122,11 +122,11 @@ endif()
 set(LIBCHAT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 # Prioritize platform-specific library names
 if(APPLE)
-    set(LIBCHAT_NAMES libchat.dylib libchat.so libchat.dll chat.dll)
+    set(LIBCHAT_NAMES liblogoschat.dylib liblogoschat.so)
 elseif(WIN32)
-    set(LIBCHAT_NAMES libchat.dll chat.dll libchat.dylib libchat.so)
+    set(LIBCHAT_NAMES liblogoschat.dll liblogoschat.dylib liblogoschat.so)
 else()
-    set(LIBCHAT_NAMES libchat.so libchat.dylib libchat.dll chat.dll)
+    set(LIBCHAT_NAMES liblogoschat.so)
 endif()
 # Always add lib directory and try to link -lchat; also keep optional direct path if present
 find_library(LIBCHAT_PATH NAMES ${LIBCHAT_NAMES} PATHS ${LIBCHAT_DIR} NO_DEFAULT_PATH)
@@ -185,11 +185,11 @@ if(NOT _cpp_sdk_is_source)
     target_link_libraries(chatsdk_module_plugin PRIVATE ${LOGOS_SDK_LIB})
 endif()
 
-# Link to libchat on all platforms
+# Link to liblogoschat on all platforms
 if(LIBCHAT_PATH)
     target_link_libraries(chatsdk_module_plugin PRIVATE ${LIBCHAT_PATH})
 else()
-    message(WARNING "libchat not found in lib/. Build or provide it before linking.")
+    message(WARNING "liblogoschat not found in lib/. Build or provide it before linking.")
 endif()
 
 # Include directories
@@ -225,7 +225,7 @@ set_target_properties(chatsdk_module_plugin PROPERTIES
     SKIP_BUILD_RPATH FALSE)
 
 if(APPLE)
-    # Allow unresolved symbols at link time; libchat will be provided at runtime
+    # Allow unresolved symbols at link time; liblogoschat will be provided at runtime
     target_link_options(chatsdk_module_plugin PRIVATE -undefined dynamic_lookup)
     set_target_properties(chatsdk_module_plugin PROPERTIES
         INSTALL_RPATH "@loader_path"
@@ -250,7 +250,7 @@ if(APPLE)
     else()
         add_custom_command(TARGET chatsdk_module_plugin POST_BUILD
             COMMAND install_name_tool -id "@rpath/chatsdk_module_plugin.dylib" $<TARGET_FILE:chatsdk_module_plugin>
-            COMMENT "Updating library paths for macOS (libchat not found)"
+            COMMENT "Updating library paths for macOS (liblogoschat not found)"
         )
     endif()
 else()

@@ -17,12 +17,10 @@ public:
     
     // Client Info
     Q_INVOKABLE virtual bool getId() = 0;
-    Q_INVOKABLE virtual bool getDefaultInboxId() = 0;
-    
     // Conversation Operations
     Q_INVOKABLE virtual bool listConversations() = 0;
     Q_INVOKABLE virtual bool getConversation(const QString &convoId) = 0;
-    Q_INVOKABLE virtual bool newPrivateConversation(const QString &introBundleJson, const QString &contentHex) = 0;
+    Q_INVOKABLE virtual bool newPrivateConversation(const QString &introBundleStr, const QString &contentHex) = 0;
     Q_INVOKABLE virtual bool sendMessage(const QString &convoId, const QString &contentHex) = 0;
     
     // Identity Operations

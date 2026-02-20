@@ -4,7 +4,7 @@
 #include "chatsdk_module_interface.h"
 #include "logos_api.h"
 #include "logos_api_client.h"
-#include "libchat.h"
+#include "liblogoschat.h"
 
 class ChatSDKModulePlugin : public QObject, public ChatSDKModuleInterface
 {
@@ -25,12 +25,10 @@ public:
     
     // Client Info
     Q_INVOKABLE bool getId() override;
-    Q_INVOKABLE bool getDefaultInboxId() override;
-    
     // Conversation Operations
     Q_INVOKABLE bool listConversations() override;
     Q_INVOKABLE bool getConversation(const QString &convoId) override;
-    Q_INVOKABLE bool newPrivateConversation(const QString &introBundleJson, const QString &contentHex) override;
+    Q_INVOKABLE bool newPrivateConversation(const QString &introBundleStr, const QString &contentHex) override;
     Q_INVOKABLE bool sendMessage(const QString &convoId, const QString &contentHex) override;
     
     // Identity Operations
@@ -42,6 +40,8 @@ public:
 
     // LogosAPI initialization
     Q_INVOKABLE void initLogos(LogosAPI* logosAPIInstance);
+
+    void emitEvent(const QString& eventName, const QVariantList& data);
 
 signals:
     void eventResponse(const QString& eventName, const QVariantList& data);
@@ -56,7 +56,6 @@ private:
     static void destroy_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void event_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void get_id_callback(int callerRet, const char* msg, size_t len, void* userData);
-    static void get_default_inbox_id_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void list_conversations_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void get_conversation_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void new_private_conversation_callback(int callerRet, const char* msg, size_t len, void* userData);
