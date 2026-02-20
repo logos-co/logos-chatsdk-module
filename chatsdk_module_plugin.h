@@ -41,6 +41,8 @@ public:
     // LogosAPI initialization
     Q_INVOKABLE void initLogos(LogosAPI* logosAPIInstance);
 
+    void emitEvent(const QString& eventName, const QVariantList& data);
+
 signals:
     void eventResponse(const QString& eventName, const QVariantList& data);
 
@@ -54,7 +56,7 @@ private:
     static void destroy_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void event_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void get_id_callback(int callerRet, const char* msg, size_t len, void* userData);
-static void list_conversations_callback(int callerRet, const char* msg, size_t len, void* userData);
+    static void list_conversations_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void get_conversation_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void new_private_conversation_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void send_message_callback(int callerRet, const char* msg, size_t len, void* userData);

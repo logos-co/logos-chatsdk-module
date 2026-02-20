@@ -16,7 +16,7 @@ ChatSDKModulePlugin::~ChatSDKModulePlugin()
 {
     // Clean up Chat context if it exists
     if (chatCtx) {
-        chat_destroy(chatCtx, nullptr, nullptr);
+        chat_destroy(chatCtx, destroy_callback, this);
         chatCtx = nullptr;
     }
     
@@ -32,6 +32,21 @@ void ChatSDKModulePlugin::initLogos(LogosAPI* logosAPIInstance) {
         delete logosAPI;
     }
     logosAPI = logosAPIInstance;
+}
+
+void ChatSDKModulePlugin::emitEvent(const QString& eventName, const QVariantList& data) {
+    if (!logosAPI) {
+        qWarning() << "ChatSDKModulePlugin: LogosAPI not available, cannot emit" << eventName;
+        return;
+    }
+
+    LogosAPIClient* client = logosAPI->getClient("chatsdk_module");
+    if (!client) {
+        qWarning() << "ChatSDKModulePlugin: Failed to get chatsdk_module client for event" << eventName;
+        return;
+    }
+
+    client->onEventResponse(this, eventName, data);
 }
 
 // ============================================================================
@@ -56,9 +71,7 @@ void ChatSDKModulePlugin::init_callback(int callerRet, const char* msg, size_t l
     eventData << message;                 // message (may be empty)
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkInitResult", eventData);
-    }
+    plugin->emitEvent("chatsdkInitResult", eventData);
 }
 
 void ChatSDKModulePlugin::start_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -79,9 +92,7 @@ void ChatSDKModulePlugin::start_callback(int callerRet, const char* msg, size_t 
     eventData << message;
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkStartResult", eventData);
-    }
+    plugin->emitEvent("chatsdkStartResult", eventData);
 }
 
 void ChatSDKModulePlugin::stop_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -102,9 +113,7 @@ void ChatSDKModulePlugin::stop_callback(int callerRet, const char* msg, size_t l
     eventData << message;
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkStopResult", eventData);
-    } 
+    plugin->emitEvent("chatsdkStopResult", eventData);
 }
 
 void ChatSDKModulePlugin::destroy_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -125,9 +134,7 @@ void ChatSDKModulePlugin::destroy_callback(int callerRet, const char* msg, size_
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkDestroyResult", eventData);
-        }
+        plugin->emitEvent("chatsdkDestroyResult", eventData);
     }
 }
 
@@ -166,9 +173,7 @@ void ChatSDKModulePlugin::event_callback(int callerRet, const char* msg, size_t 
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, eventName, eventData);
-        }
+        plugin->emitEvent(eventName, eventData);
     }
 }
 
@@ -189,9 +194,7 @@ void ChatSDKModulePlugin::get_id_callback(int callerRet, const char* msg, size_t
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetIdResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetIdResult", eventData);
     }
 }
 
@@ -212,9 +215,7 @@ void ChatSDKModulePlugin::list_conversations_callback(int callerRet, const char*
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkListConversationsResult", eventData);
-        }
+        plugin->emitEvent("chatsdkListConversationsResult", eventData);
     }
 }
 
@@ -235,9 +236,7 @@ void ChatSDKModulePlugin::get_conversation_callback(int callerRet, const char* m
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetConversationResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetConversationResult", eventData);
     }
 }
 
@@ -259,9 +258,7 @@ void ChatSDKModulePlugin::new_private_conversation_callback(int callerRet, const
     eventData << conversationJson;                                        // conversation JSON
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkNewPrivateConversationResult", eventData);
-    }
+    plugin->emitEvent("chatsdkNewPrivateConversationResult", eventData);
 }
 
 void ChatSDKModulePlugin::send_message_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -283,9 +280,7 @@ void ChatSDKModulePlugin::send_message_callback(int callerRet, const char* msg, 
     eventData << resultJson;              // result JSON (may contain message ID)
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkSendMessageResult", eventData);
-    }
+    plugin->emitEvent("chatsdkSendMessageResult", eventData);
 }
 
 void ChatSDKModulePlugin::get_identity_callback(int callerRet, const char* msg, size_t len, void* userData)
@@ -305,9 +300,7 @@ void ChatSDKModulePlugin::get_identity_callback(int callerRet, const char* msg, 
         eventData << message;
         eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetIdentityResult", eventData);
-        }
+        plugin->emitEvent("chatsdkGetIdentityResult", eventData);
     }
 }
 
@@ -321,17 +314,15 @@ void ChatSDKModulePlugin::create_intro_bundle_callback(int callerRet, const char
         return;
     }
 
-    QString bundleJson = (msg && len > 0) ? QString::fromUtf8(msg, len) : "";
-    
+    QString bundleStr = (msg && len > 0) ? QString::fromUtf8(msg, len) : "";
+
     QVariantList eventData;
-    eventData << (callerRet == RET_OK && !bundleJson.isEmpty());  // success
-    eventData << callerRet;                                         // return code
-    eventData << bundleJson;                                        // bundle JSON
+    eventData << (callerRet == RET_OK && !bundleStr.isEmpty());  // success
+    eventData << callerRet;                                        // return code
+    eventData << bundleStr;                                        // intro bundle string
     eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (plugin->logosAPI) {
-        plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkCreateIntroBundleResult", eventData);
-    }
+    plugin->emitEvent("chatsdkCreateIntroBundleResult", eventData);
 }
 
 // ============================================================================
