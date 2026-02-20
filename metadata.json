@@ -7,6 +7,6 @@
   "category": "chat",
   "main": "chatsdk_module_plugin",
   "dependencies": [],
-  "include": ["libchat.so", "libchat.dylib", "libchat.dll"],
+  "include": ["liblogoschat.so", "liblogoschat.dylib", "liblogoschat.dll"],
   "capabilities": []
 }

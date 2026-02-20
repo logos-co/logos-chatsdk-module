@@ -152,7 +152,7 @@ void ChatSDKModulePlugin::event_callback(int callerRet, const char* msg, size_t 
             QJsonObject obj = doc.object();
             QString eventType = obj["eventType"].toString();
             
-            // Map libchat event types to Qt event names
+            // Map event types to Qt event names
             if (eventType == "new_message") {
                 eventName = "chatsdkNewMessage";
             } else if (eventType == "new_conversation") {
@@ -191,29 +191,6 @@ void ChatSDKModulePlugin::get_id_callback(int callerRet, const char* msg, size_t
 
         if (plugin->logosAPI) {
             plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetIdResult", eventData);
-        }
-    }
-}
-
-void ChatSDKModulePlugin::get_default_inbox_id_callback(int callerRet, const char* msg, size_t len, void* userData)
-{
-    qDebug() << "ChatSDKModulePlugin::get_default_inbox_id_callback called with ret:" << callerRet;
-
-    ChatSDKModulePlugin* plugin = static_cast<ChatSDKModulePlugin*>(userData);
-    if (!plugin) {
-        qWarning() << "ChatSDKModulePlugin::get_default_inbox_id_callback: Invalid userData";
-        return;
-    }
-
-    if (msg && len > 0) {
-        QString message = QString::fromUtf8(msg, len);
-        
-        QVariantList eventData;
-        eventData << message;
-        eventData << QDateTime::currentDateTime().toString(Qt::ISODate);
-
-        if (plugin->logosAPI) {
-            plugin->logosAPI->getClient("core_manager")->onEventResponse(plugin, "chatsdkGetDefaultInboxIdResult", eventData);
         }
     }
 }
@@ -480,26 +457,6 @@ bool ChatSDKModulePlugin::getId()
     }
 }
 
-bool ChatSDKModulePlugin::getDefaultInboxId()
-{
-    qDebug() << "ChatSDKModulePlugin::getDefaultInboxId called";
-    
-    if (!chatCtx) {
-        qWarning() << "ChatSDKModulePlugin: Cannot get default inbox ID - context not initialized";
-        return false;
-    }
-    
-    int result = chat_get_default_inbox_id(chatCtx, get_default_inbox_id_callback, this);
-    
-    if (result == RET_OK) {
-        qDebug() << "ChatSDKModulePlugin: Get default inbox ID initiated successfully";
-        return true;
-    } else {
-        qWarning() << "ChatSDKModulePlugin: Failed to get default inbox ID, error code:" << result;
-        return false;
-    }
-}
-
 // ============================================================================
 // Conversation Operations
 // ============================================================================
@@ -546,16 +503,16 @@ bool ChatSDKModulePlugin::getConversation(const QString &convoId)
     }
 }
 
-bool ChatSDKModulePlugin::newPrivateConversation(const QString &introBundleJson, const QString &contentHex)
+bool ChatSDKModulePlugin::newPrivateConversation(const QString &introBundleStr, const QString &contentHex)
 {
     qDebug() << "ChatSDKModulePlugin::newPrivateConversation called";
-    
+
     if (!chatCtx) {
         qWarning() << "ChatSDKModulePlugin: Cannot create new private conversation - context not initialized";
         return false;
     }
-    
-    QByteArray introBundleUtf8 = introBundleJson.toUtf8();
+
+    QByteArray introBundleUtf8 = introBundleStr.toUtf8();
     QByteArray contentUtf8 = contentHex.toUtf8();
     
     int result = chat_new_private_conversation(chatCtx, new_private_conversation_callback, this, introBundleUtf8.constData(), contentUtf8.constData());
