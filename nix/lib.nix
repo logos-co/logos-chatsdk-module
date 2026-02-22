@@ -1,6 +1,12 @@
 # Builds the logos-chatsdk-module library
 { pkgs, common, src }:
 
+let
+  libExt = if pkgs.stdenv.hostPlatform.isDarwin then "dylib" else "so";
+  liblogoschatLib = "liblogoschat.${libExt}";
+  liblibchatLib = "liblibchat.${libExt}";
+in
+
 pkgs.stdenv.mkDerivation {
   pname = "${common.pname}-lib";
   version = common.version;
@@ -8,42 +14,32 @@ pkgs.stdenv.mkDerivation {
   inherit src;
   inherit (common) nativeBuildInputs buildInputs cmakeFlags meta env;
   
-  # Determine platform-specific library extension
-  liblogoschatLib = if pkgs.stdenv.hostPlatform.isDarwin then "liblogoschat.dylib" else "liblogoschat.so";
-  
   postInstall = ''
     mkdir -p $out/lib
     
     # Copy liblogoschat library from source
-    srcLib="$src/lib/''${liblogoschatLib}"
+    srcLib="$src/lib/${liblogoschatLib}"
     if [ ! -f "$srcLib" ]; then
-      echo "Expected ''${liblogoschatLib} in $src/lib/" >&2
+      echo "Expected ${liblogoschatLib} in $src/lib/" >&2
       exit 1
     fi
     cp "$srcLib" "$out/lib/"
     
-    # Fix the install name of liblogoschat on macOS
-    ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-      ${pkgs.darwin.cctools}/bin/install_name_tool -id "@rpath/''${liblogoschatLib}" "$out/lib/''${liblogoschatLib}"
-    ''}
-    
-    # Copy the chatsdk module plugin from the installed location
-    if [ -f "$out/lib/logos/modules/chatsdk_module_plugin.dylib" ]; then
-      cp "$out/lib/logos/modules/chatsdk_module_plugin.dylib" "$out/lib/"
-      
-      # Fix the plugin's reference to liblogoschat on macOS
-      ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-        # Find what liblogoschat path the plugin is referencing and change it to @rpath
-        for dep in $(${pkgs.darwin.cctools}/bin/otool -L "$out/lib/chatsdk_module_plugin.dylib" | grep liblogoschat | awk '{print $1}'); do
-          ${pkgs.darwin.cctools}/bin/install_name_tool -change "$dep" "@rpath/''${liblogoschatLib}" "$out/lib/chatsdk_module_plugin.dylib"
-        done
-      ''}
-    elif [ -f "$out/lib/logos/modules/chatsdk_module_plugin.so" ]; then
-      cp "$out/lib/logos/modules/chatsdk_module_plugin.so" "$out/lib/"
-    else
-      echo "Error: No chatsdk_module_plugin library file found"
+    # Copy liblibchat library from source
+    srcLibChat="$src/lib/${liblibchatLib}" 
+    if [ ! -f "$srcLibChat" ]; then
+      echo "Expected ${liblibchatLib} in $src/lib/" >&2
       exit 1
     fi
+    cp "$srcLibChat" "$out/lib/"
+    
+    # Copy the chatsdk module plugin from the installed location
+    pluginFile="$out/lib/logos/modules/chatsdk_module_plugin.${libExt}"
+    if [ ! -f "$pluginFile" ]; then
+      echo "Error: No chatsdk_module_plugin.${libExt} found" >&2
+      exit 1
+    fi
+    cp "$pluginFile" "$out/lib/"
     
     # Remove the nested structure we don't want
     rm -rf "$out/lib/logos" 2>/dev/null || true
