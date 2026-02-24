@@ -16,14 +16,14 @@ nix build '.#default'
 
 The result will include:
 - `/lib/chatsdk_module_plugin.dylib` (or `.so` on Linux) - The ChatSDK module plugin
-- `/lib/libchat.dylib` (or `.so` on Linux) - The chat library dependency
+- `/lib/liblogoschat.dylib` (or `.so` on Linux) - The chat library dependency
 - `/include/chatsdk_module_api.h` - Generated header for the module API
 - `/include/chatsdk_module_api.cpp` - Generated implementation for the module API
 
 #### Build Individual Components
 
 ```bash
-# Build only the library (plugin + libchat)
+# Build only the library (plugin + liblogoschat)
 nix build '.#lib'
 
 # Build only the generated headers
@@ -51,7 +51,7 @@ The compiled artifacts can be found at `result/`
 
 The nix build system is organized into modular files in the `/nix` directory:
 - `nix/default.nix` - Common configuration (dependencies, flags, metadata)
-- `nix/lib.nix` - Module plugin and libchat library compilation
+- `nix/lib.nix` - Module plugin and liblogoschat library compilation
 - `nix/include.nix` - Header generation using logos-cpp-generator
 
 ## Output Structure
@@ -61,14 +61,14 @@ When built with Nix, the module produces:
 ```
 result/
 ├── lib/
-│   ├── libchat.dylib               # Chat library
+│   ├── liblogoschat.dylib           # Chat library
 │   └── chatsdk_module_plugin.dylib # Logos module plugin
 └── include/
     ├── chatsdk_module_api.h        # Generated API header
     └── chatsdk_module_api.cpp      # Generated API implementation
 ```
 
-Both libraries must remain in the same directory, as `chatsdk_module_plugin.dylib` is configured with `@loader_path` to find `libchat.dylib` relative to itself.
+Both libraries must remain in the same directory, as `chatsdk_module_plugin.dylib` is configured with `@loader_path` to find `liblogoschat.dylib` relative to itself.
 
 ### Requirements
 
@@ -82,4 +82,4 @@ Both libraries must remain in the same directory, as `chatsdk_module_plugin.dyli
 - Qt6 Remote Objects (qtremoteobjects)
 - logos-liblogos
 - logos-cpp-sdk (for header generation)
-- libchat (included in lib/)
+- liblogoschat (included in lib/)

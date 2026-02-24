@@ -119,17 +119,27 @@ else()
     )
 endif()
 
-set(LIBCHAT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+# logos-chat (liblogoschat) root: set via -DLOGOS_CHAT_ROOT=<path>
+if(NOT DEFINED LOGOS_CHAT_ROOT)
+    message(FATAL_ERROR "LOGOS_CHAT_ROOT is not set. "
+                        "Pass -DLOGOS_CHAT_ROOT=<path> pointing to the logos-chat install prefix.")
+endif()
+
+if(NOT EXISTS "${LOGOS_CHAT_ROOT}/include/liblogoschat.h")
+    message(FATAL_ERROR "liblogoschat.h not found at ${LOGOS_CHAT_ROOT}/include/. "
+                        "Ensure LOGOS_CHAT_ROOT points to a valid logos-chat build output.")
+endif()
+
+set(LIBLOGOSCHAT_DIR "${LOGOS_CHAT_ROOT}/lib")
 # Prioritize platform-specific library names
 if(APPLE)
-    set(LIBCHAT_NAMES liblogoschat.dylib liblogoschat.so)
+    set(LIBLOGOSCHAT_NAMES liblogoschat.dylib liblogoschat.so)
 elseif(WIN32)
-    set(LIBCHAT_NAMES liblogoschat.dll liblogoschat.dylib liblogoschat.so)
+    set(LIBLOGOSCHAT_NAMES liblogoschat.dll liblogoschat.dylib liblogoschat.so)
 else()
-    set(LIBCHAT_NAMES liblogoschat.so)
+    set(LIBLOGOSCHAT_NAMES liblogoschat.so)
 endif()
-# Always add lib directory and try to link -lchat; also keep optional direct path if present
-find_library(LIBCHAT_PATH NAMES ${LIBCHAT_NAMES} PATHS ${LIBCHAT_DIR} NO_DEFAULT_PATH)
+find_library(LIBLOGOSCHAT_PATH NAMES ${LIBLOGOSCHAT_NAMES} PATHS ${LIBLOGOSCHAT_DIR} NO_DEFAULT_PATH)
 
 # Plugin sources
 set(PLUGIN_SOURCES
@@ -186,16 +196,16 @@ if(NOT _cpp_sdk_is_source)
 endif()
 
 # Link to liblogoschat on all platforms
-if(LIBCHAT_PATH)
-    target_link_libraries(chatsdk_module_plugin PRIVATE ${LIBCHAT_PATH})
+if(LIBLOGOSCHAT_PATH)
+    target_link_libraries(chatsdk_module_plugin PRIVATE ${LIBLOGOSCHAT_PATH})
 else()
-    message(WARNING "liblogoschat not found in lib/. Build or provide it before linking.")
+    message(WARNING "liblogoschat not found in ${LOGOS_CHAT_ROOT}/lib/. Check LOGOS_CHAT_ROOT.")
 endif()
 
 # Include directories
 target_include_directories(chatsdk_module_plugin PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${LIBCHAT_DIR}
+    ${LOGOS_CHAT_ROOT}/include
 )
 
 # Add include directories based on layout type
@@ -232,19 +242,19 @@ if(APPLE)
         INSTALL_NAME_DIR "@rpath"
         BUILD_WITH_INSTALL_NAME_DIR TRUE)
 
-    if(LIBCHAT_PATH)
-        get_filename_component(LIBCHAT_FILENAME "${LIBCHAT_PATH}" NAME)
+    if(LIBLOGOSCHAT_PATH)
+        get_filename_component(LIBLOGOSCHAT_FILENAME "${LIBLOGOSCHAT_PATH}" NAME)
         add_custom_command(TARGET chatsdk_module_plugin PRE_LINK
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${LIBCHAT_PATH}
-                ${CMAKE_BINARY_DIR}/modules/${LIBCHAT_FILENAME}
-            COMMENT "Copying ${LIBCHAT_FILENAME} to modules directory"
+                ${LIBLOGOSCHAT_PATH}
+                ${CMAKE_BINARY_DIR}/modules/${LIBLOGOSCHAT_FILENAME}
+            COMMENT "Copying ${LIBLOGOSCHAT_FILENAME} to modules directory"
         )
 
         add_custom_command(TARGET chatsdk_module_plugin POST_BUILD
             COMMAND install_name_tool -id "@rpath/chatsdk_module_plugin.dylib" $<TARGET_FILE:chatsdk_module_plugin>
-            COMMAND install_name_tool -id "@rpath/${LIBCHAT_FILENAME}" "${CMAKE_BINARY_DIR}/modules/${LIBCHAT_FILENAME}"
-            COMMAND install_name_tool -change "${LIBCHAT_PATH}" "@rpath/${LIBCHAT_FILENAME}" $<TARGET_FILE:chatsdk_module_plugin>
+            COMMAND install_name_tool -id "@rpath/${LIBLOGOSCHAT_FILENAME}" "${CMAKE_BINARY_DIR}/modules/${LIBLOGOSCHAT_FILENAME}"
+            COMMAND install_name_tool -change "${LIBLOGOSCHAT_PATH}" "@rpath/${LIBLOGOSCHAT_FILENAME}" $<TARGET_FILE:chatsdk_module_plugin>
             COMMENT "Updating library paths for macOS"
         )
     else()
@@ -258,13 +268,13 @@ else()
         INSTALL_RPATH "$ORIGIN"
         INSTALL_RPATH_USE_LINK_PATH FALSE)
 
-    if(LIBCHAT_PATH)
-        get_filename_component(LIBCHAT_FILENAME "${LIBCHAT_PATH}" NAME)
+    if(LIBLOGOSCHAT_PATH)
+        get_filename_component(LIBLOGOSCHAT_FILENAME "${LIBLOGOSCHAT_PATH}" NAME)
         add_custom_command(TARGET chatsdk_module_plugin PRE_LINK
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${LIBCHAT_PATH}
-                ${CMAKE_BINARY_DIR}/modules/${LIBCHAT_FILENAME}
-            COMMENT "Copying ${LIBCHAT_FILENAME} to modules directory"
+                ${LIBLOGOSCHAT_PATH}
+                ${CMAKE_BINARY_DIR}/modules/${LIBLOGOSCHAT_FILENAME}
+            COMMENT "Copying ${LIBLOGOSCHAT_FILENAME} to modules directory"
         )
     endif()
 endif()
