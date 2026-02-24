@@ -1,5 +1,5 @@
 # Builds the logos-chatsdk-module library
-{ pkgs, common, src }:
+{ pkgs, common, src, logosChat }:
 
 pkgs.stdenv.mkDerivation {
   pname = "${common.pname}-lib";
@@ -14,10 +14,10 @@ pkgs.stdenv.mkDerivation {
   postInstall = ''
     mkdir -p $out/lib
     
-    # Copy liblogoschat library from source
-    srcLib="$src/lib/''${liblogoschatLib}"
+    # Copy liblogoschat library from logos-chat build output
+    srcLib="${logosChat}/lib/''${liblogoschatLib}"
     if [ ! -f "$srcLib" ]; then
-      echo "Expected ''${liblogoschatLib} in $src/lib/" >&2
+      echo "Expected ''${liblogoschatLib} in ${logosChat}/lib/" >&2
       exit 1
     fi
     cp "$srcLib" "$out/lib/"

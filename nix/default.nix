@@ -1,5 +1,5 @@
 # Common build configuration shared across all packages
-{ pkgs, logosSdk, logosLiblogos }:
+{ pkgs, logosSdk, logosLiblogos, logosChat }:
 
 {
   pname = "logos-chatsdk-module";
@@ -24,6 +24,7 @@
     "-GNinja"
     "-DLOGOS_CPP_SDK_ROOT=${logosSdk}"
     "-DLOGOS_LIBLOGOS_ROOT=${logosLiblogos}"
+    "-DLOGOS_CHAT_ROOT=${logosChat}"
     "-DLOGOS_CHATSDK_MODULE_USE_VENDOR=OFF"
   ];
   
