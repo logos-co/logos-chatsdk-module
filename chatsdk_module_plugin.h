@@ -6,6 +6,22 @@
 #include "logos_api_client.h"
 #include "liblogoschat.h"
 
+/**
+ * @class ChatSDKModulePlugin
+ * @brief Qt plugin that exposes the Logos Chat SDK to QML and the host application.
+ *
+ * All operations are asynchronous. Each method returns immediately — @c true
+ * meaning the request was accepted, @c false meaning it was rejected before
+ * being sent (e.g. the client has not been initialised yet). The actual result
+ * always arrives via the @ref eventResponse signal using a method-specific
+ * event name.
+ *
+ * **Typical startup sequence:**
+ * -# @ref initLogos — provide the LogosAPI instance.
+ * -# @ref initChat — initialise the client with your configuration.
+ * -# @ref setEventCallback — subscribe to push events before starting.
+ * -# @ref startChat — connect and begin receiving messages.
+ */
 class ChatSDKModulePlugin : public QObject, public ChatSDKModuleInterface
 {
     Q_OBJECT
@@ -16,40 +32,268 @@ public:
     ChatSDKModulePlugin();
     ~ChatSDKModulePlugin();
 
+    // -------------------------------------------------------------------------
     // Client Lifecycle
-    Q_INVOKABLE bool initChat(const QString &configJson) override;
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Initialises the chat client with the provided delivery configuration.
+     *
+     * @param configJson JSON configuration for the delivery service.
+     * @return @c true if the request was accepted; @c false if initialisation
+     *         could not start (e.g. invalid config preventing context creation).
+     *         No signal is emitted on synchronous failure. Details are returned asynchronously.
+     *
+     * @note Asynchronously returns result: @c eventResponse("chatsdkInitResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — optional message from the SDK.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool initChat(const QString &configJson) override; // TODO: should not be async
+
+    /**
+     * @brief Starts the chat client and connects to the network.
+     *
+     * @ref initChat must be called first.
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not yet initialised.
+     *
+     * @note Asynchronously returns result: @c eventResponse("chatsdkStartResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — optional message from the SDK.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
     Q_INVOKABLE bool startChat() override;
-    Q_INVOKABLE bool stopChat() override;
-    Q_INVOKABLE bool destroyChat() override;
+
+    /**
+     * @brief Stops the chat client and disconnects from the network.
+     *
+     * This is only called when deinitializing the chat client. 
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note Asynchronously returns result: @c eventResponse("chatsdkStopResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — optional message from the SDK.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool stopChat() override; // TODO: should not be async
+
+    /**
+     * @brief Deallocates the chat client.
+     *
+     * After this call all memory is freed, and the chat client cannot be used anymore.
+     * Accessing the chat client results in undefined behavior.
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkDestroyResult", data) — only emitted
+     *       when the SDK provides a response message:
+     *   - @c data[0] @c QString — message from the SDK.
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool destroyChat() override; // TODO: should not be async
+
+    /**
+     * @brief Subscribes to push events from the SDK.
+     *
+     * This is a synchronous call that registers a handler for incoming
+     * events (new messages, new conversations, delivery acknowledgements) which are
+     * delivered via @ref eventResponse as they arrive. Call this after @ref initChat
+      and before @ref startChat to ensure that no messages are missed.
+     *
+     * Push events will arrive as:
+     * - @c eventResponse("chatsdkNewMessage", data)
+     * - @c eventResponse("chatsdkNewConversation", data)
+     * - @c eventResponse("chatsdkDeliveryAck", data)
+     *
+     * For all push events @c data is:
+     *   - @c data[0] @c QString — JSON payload describing the event.
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     *
+     * @return @c true if the subscription was registered; @c false if the
+     *         client is not initialised.
+     */
     Q_INVOKABLE bool setEventCallback() override;
-    
+
+    // -------------------------------------------------------------------------
     // Client Info
-    Q_INVOKABLE bool getId() override;
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Retrieves the local client's unique identifier.
+     * 
+     * Ids can be used to uniquely distinguish between client installtions.
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note Asynchronously returns result: @c eventResponse("chatsdkGetIdResult", data)
+     *   - @c data[0] @c QString — the client identifier.
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool getId() override; // TODO: should not be async
+
+    /**
+
+    // -------------------------------------------------------------------------
     // Conversation Operations
-    Q_INVOKABLE bool listConversations() override;
-    Q_INVOKABLE bool getConversation(const QString &convoId) override;
-    Q_INVOKABLE bool newPrivateConversation(const QString &introBundleStr, const QString &contentHex) override;
-    Q_INVOKABLE bool sendMessage(const QString &convoId, const QString &contentHex) override;
-    
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Retrieves all conversations the local client participates in.
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkListConversationsResult", data)
+     *   - @c data[0] @c QString — Conversation Ids 
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool listConversations() override;  // TODO: should not be async
+
+    /**
+     * @brief Retrieves a single conversation by its identifier.
+     *
+     * This conversation can be used to send messages.
+     * @param convoId The conversation identifier to look up.
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkGetConversationResult", data)
+     *   - @c data[0] @c QString — JSON object describing the conversation.
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool getConversation(const QString &convoId) override;  // TODO: should not be async
+
+    /**
+     * @brief Starts a new private (1-to-1) conversation with a remote contact.
+     *
+     * The remote contact must share their introduction bundle (see
+     * @ref createIntroBundle) with you out-of-band. You must include an
+     * intial message.
+     *
+     * @param introBundleStr Introduction bundle of the remote contact.
+     * @param contentHex     Hex-encoded content of the opening message
+     *                     
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkNewPrivateConversationResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — JSON object of the newly created conversation.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool newPrivateConversation(const QString &introBundleStr, const QString &contentHex) override;  // TODO: should not be async
+                                                                                                                 // TODO: content should accept bytes not hex     
+    /**
+     * @brief Sends a message to an existing conversation.
+     *
+     * @param convoId    Identifier of the target conversation.
+     * @param contentHex Hex-encoded message content.
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkSendMessageResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — JSON result, may include the assigned message ID.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool sendMessage(const QString &convoId, const QString &contentHex) override;   // TODO: content should accept bytes not hex       
+    // -------------------------------------------------------------------------
+                                                                                              
     // Identity Operations
-    Q_INVOKABLE bool getIdentity() override;
-    Q_INVOKABLE bool createIntroBundle() override;
-    
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Retrieves the local client's identity information.
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkGetIdentityResult", data)
+     *   - @c data[0] @c QString — JSON object containing identity fields.
+     *   - @c data[1] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool getIdentity() override;  // TODO: Deprecate; This should not be used.
+
+    /**
+     * @brief Creates a new introduction bundle to share with other users.
+     *
+     * The bundle encodes the public key material that a remote party needs to
+     * initiate a private conversation with you via @ref newPrivateConversation.
+     * Share it out-of-band (e.g. via a QR code or copy-paste).
+     *
+     * @return @c true if the request was accepted; @c false if the client is
+     *         not initialised.
+     *
+     * @note  Asynchronously returns result: @c eventResponse("chatsdkCreateIntroBundleResult", data)
+     *   - @c data[0] @c bool — @c true on success.
+     *   - @c data[1] @c int — status code.
+     *   - @c data[2] @c QString — the introduction bundle string to share.
+     *   - @c data[3] @c QString — ISO-8601 timestamp.
+     */
+    Q_INVOKABLE bool createIntroBundle() override;  // TODO: stopChat should not be async
+
+    /** @brief Returns the plugin name. */
     QString name() const override { return "chatsdk_module"; }
+
+    /** @brief Returns the plugin version string. */
     QString version() const override { return "1.0.0"; }
 
-    // LogosAPI initialization
+    /**
+     * @brief Provides the LogosAPI instance used to route events to the host.
+     *
+     * @param logosAPIInstance The host application's LogosAPI object.
+     */
     Q_INVOKABLE void initLogos(LogosAPI* logosAPIInstance);
 
+    /**
+     * @brief Forwards an SDK event to the host application.
+     *
+     * Intended for internal use by callback functions. Consumer code should
+     * connect to @ref eventResponse instead.
+     *
+     * @param eventName Name of the event.
+     * @param data      Ordered list of event arguments.
+     */
     void emitEvent(const QString& eventName, const QVariantList& data);
 
 signals:
-    void eventResponse(const QString& eventName, const QVariantList& data);
+    /**
+     * @brief Emitted when the SDK completes an operation or delivers a push event.
+     *
+     * Connect to this signal to handle all chat SDK responses. Use @p eventName
+     * to identify which operation completed. See each method's @c @note for the
+     * exact @p data layout.
+     *
+     * **Summary of event names:**
+     * - Lifecycle: @c chatsdkInitResult, @c chatsdkStartResult,
+     *   @c chatsdkStopResult, @c chatsdkDestroyResult
+     * - Client info: @c chatsdkGetIdResult
+     * - Conversations: @c chatsdkListConversationsResult,
+     *   @c chatsdkGetConversationResult, @c chatsdkNewPrivateConversationResult,
+     *   @c chatsdkSendMessageResult
+     * - Identity: @c chatsdkGetIdentityResult, @c chatsdkCreateIntroBundleResult
+     * - Push events (via @ref setEventCallback): @c chatsdkNewMessage,
+     *   @c chatsdkNewConversation, @c chatsdkDeliveryAck
+     *
+     * @param eventName Name identifying the event type.
+     * @param data      Ordered list of event-specific arguments.
+     */
+    void eventResponse(const QString& eventName, const QVariantList& data);  // TODO: should split into dedicated signals per event.     
 
 private:
     void* chatCtx;
-    
-    // Static callback functions for chat SDK
+
     static void init_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void start_callback(int callerRet, const char* msg, size_t len, void* userData);
     static void stop_callback(int callerRet, const char* msg, size_t len, void* userData);
