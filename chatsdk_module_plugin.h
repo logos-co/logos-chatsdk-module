@@ -306,16 +306,41 @@ signals:
      * to identify which operation completed. See each method's @c @note for the
      * exact @p data layout.
      *
-     * **Summary of event names:**
-     * - Lifecycle: @c chatsdkInitResult, @c chatsdkStartResult,
-     *   @c chatsdkStopResult, @c chatsdkDestroyResult
-     * - Client info: @c chatsdkGetIdResult
-     * - Conversations: @c chatsdkListConversationsResult,
-     *   @c chatsdkGetConversationResult, @c chatsdkNewPrivateConversationResult,
-     *   @c chatsdkSendMessageResult
-     * - Identity: @c chatsdkGetIdentityResult, @c chatsdkCreateIntroBundleResult
-     * - Push events (via @ref setEventCallback): @c chatsdkNewMessage,
-     *   @c chatsdkNewConversation, @c chatsdkDeliveryAck
+     * **Event reference:**
+     *
+     * *Lifecycle*
+     * | Event | data[0] | data[1] | data[2] | data[3] |
+     * |---|---|---|---|---|
+     * | @c chatsdkInitResult       | `bool` success | `int` status code | `QString` SDK message | `QString` ISO-8601 timestamp |
+     * | @c chatsdkStartResult      | `bool` success | `int` status code | `QString` SDK message | `QString` ISO-8601 timestamp |
+     * | @c chatsdkStopResult       | `bool` success | `int` status code | `QString` SDK message | `QString` ISO-8601 timestamp |
+     * | @c chatsdkDestroyResult    | `QString` SDK message | `QString` ISO-8601 timestamp | — | — |
+     *
+     * *Client info*
+     * | Event | data[0] | data[1] |
+     * |---|---|---|
+     * | @c chatsdkGetIdResult | `QString` client identifier | `QString` ISO-8601 timestamp |
+     *
+     * *Conversations*
+     * | Event | data[0] | data[1] | data[2] | data[3] |
+     * |---|---|---|---|---|
+     * | @c chatsdkListConversationsResult        | `QString` conversation IDs | `QString` ISO-8601 timestamp | — | — |
+     * | @c chatsdkGetConversationResult          | `QString` JSON conversation object | `QString` ISO-8601 timestamp | — | — |
+     * | @c chatsdkNewPrivateConversationResult   | `bool` success | `int` status code | `QString` JSON conversation object | `QString` ISO-8601 timestamp |
+     * | @c chatsdkSendMessageResult              | `bool` success | `int` status code | `QString` JSON result (may include message ID) | `QString` ISO-8601 timestamp |
+     *
+     * *Identity*
+     * | Event | data[0] | data[1] | data[2] | data[3] |
+     * |---|---|---|---|---|
+     * | @c chatsdkGetIdentityResult        | `QString` JSON identity object | `QString` ISO-8601 timestamp | — | — |
+     * | @c chatsdkCreateIntroBundleResult  | `bool` success | `int` status code | `QString` introduction bundle string | `QString` ISO-8601 timestamp |
+     *
+     * *Push events (via @ref setEventCallback)*
+     * | Event | data[0] | data[1] |
+     * |---|---|---|
+     * | @c chatsdkNewMessage      | `QString` JSON payload | `QString` ISO-8601 timestamp |
+     * | @c chatsdkNewConversation | `QString` JSON payload | `QString` ISO-8601 timestamp |
+     * | @c chatsdkDeliveryAck     | `QString` JSON payload | `QString` ISO-8601 timestamp |
      *
      * @param eventName Name identifying the event type.
      * @param data      Ordered list of event-specific arguments.
