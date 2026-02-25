@@ -6,7 +6,7 @@ pkgs.stdenv.mkDerivation {
   version = common.version;
   
   inherit src;
-  inherit (common) nativeBuildInputs buildInputs cmakeFlags meta env;
+  inherit (common) nativeBuildInputs buildInputs cmakeFlags meta;
   
   # Determine platform-specific library extension
   liblogoschatLib = if pkgs.stdenv.hostPlatform.isDarwin then "liblogoschat.dylib" else "liblogoschat.so";

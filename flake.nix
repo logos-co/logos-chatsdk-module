@@ -40,8 +40,6 @@
         in
         {
           # Individual outputs
-          logos-chatsdk-module-lib = lib;
-          logos-chatsdk-module-include = include;
           lib = lib;
           
           # Default package (combined)
