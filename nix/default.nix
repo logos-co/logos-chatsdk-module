@@ -27,13 +27,7 @@
     "-DLOGOS_CHAT_ROOT=${logosChat}"
     "-DLOGOS_CHATSDK_MODULE_USE_VENDOR=OFF"
   ];
-  
-  # Environment variables
-  env = {
-    LOGOS_CPP_SDK_ROOT = "${logosSdk}";
-    LOGOS_LIBLOGOS_ROOT = "${logosLiblogos}";
-  };
-  
+
   # Metadata
   meta = with pkgs.lib; {
     description = "Logos ChatSDK Module - Provides chat communication capabilities";
