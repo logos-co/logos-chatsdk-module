@@ -8,13 +8,16 @@
 
 /**
  * @class ChatSDKModulePlugin
- * @brief Qt plugin that exposes the Logos Chat SDK to QML and the host application.
+ * @brief Qt plugin that exposes the Logos Chat SDK.
  *
- * All operations are asynchronous. Each method returns immediately — @c true
- * meaning the request was accepted, @c false meaning it was rejected before
- * being sent (e.g. the client has not been initialised yet). The actual result
- * always arrives via the @ref eventResponse signal using a method-specific
- * event name.
+ * Most operations are asynchronous. For these methods, the call returns
+ * immediately — @c true meaning the request was accepted, @c false meaning it
+ * was rejected before being sent (e.g. the client has not been initialised yet).
+ * The actual result then arrives via the @ref eventResponse signal using a
+ * method-specific event name.
+ *
+ * Some helper operations are synchronous (e.g. @ref initLogos and
+ * @ref setEventCallback) and do not emit an @ref eventResponse for completion.
  *
  * **Typical startup sequence:**
  * -# @ref initLogos — provide the LogosAPI instance.
@@ -40,11 +43,13 @@ public:
      * @brief Initialises the chat client with the provided delivery configuration.
      *
      * @param configJson JSON configuration for the delivery service.
-     * @return @c true if the request was accepted; @c false if initialisation
-     *         could not start (e.g. invalid config preventing context creation).
-     *         No signal is emitted on synchronous failure. Details are returned asynchronously.
+     * @return @c true if the request was accepted and initialisation was started;
+     *         @c false if initialisation could not start (e.g. invalid config
+     *         preventing context creation). When this function returns @c false,
+     *         no result signal is emitted and the caller must rely on the return value.
      *
-     * @note Asynchronously returns result: @c eventResponse("chatsdkInitResult", data)
+     * @note If this function returns @c true, the result is returned asynchronously as
+     *       @c eventResponse("chatsdkInitResult", data)
      *   - @c data[0] @c bool — @c true on success.
      *   - @c data[1] @c int — status code.
      *   - @c data[2] @c QString — optional message from the SDK.
@@ -134,13 +139,16 @@ public:
      * @return @c true if the request was accepted; @c false if the client is
      *         not initialised.
      *
-     * @note Asynchronously returns result: @c eventResponse("chatsdkGetIdResult", data)
+     * @note When the SDK provides a non-empty identifier, this call
+     *       asynchronously returns a result via @c eventResponse("chatsdkGetIdResult", data)
      *   - @c data[0] @c QString — the client identifier.
      *   - @c data[1] @c QString — ISO-8601 timestamp.
+     *
+     *       On some failures the SDK may not provide an identifier or message,
+     *       and in those cases no @c chatsdkGetIdResult event is emitted. Callers
+     *       must not assume that a result signal is always delivered.
      */
     Q_INVOKABLE bool getId() override; // TODO: should not be async
-
-    /**
 
     // -------------------------------------------------------------------------
     // Conversation Operations
@@ -152,9 +160,17 @@ public:
      * @return @c true if the request was accepted; @c false if the client is
      *         not initialised.
      *
-     * @note  Asynchronously returns result: @c eventResponse("chatsdkListConversationsResult", data)
-     *   - @c data[0] @c QString — Conversation Ids 
+     * @note Asynchronously returns result (when available): @c eventResponse("chatsdkListConversationsResult", data)
+     *   - @c data[0] @c QString — Conversation Ids.
      *   - @c data[1] @c QString — ISO-8601 timestamp.
+     *
+     * @warning Due to current SDK callback semantics, this event is only emitted
+     *          when the underlying SDK provides a non-empty list of conversations
+     *          (i.e. when @c msg is non-null and @c len > 0). On certain failures
+     *          or when there are no conversations, no @c chatsdkListConversationsResult
+     *          event may be emitted. Callers SHOULD NOT rely on this event always
+     *          firing; instead, use the synchronous return value from this method
+     *          together with appropriate timeout or fallback handling.
      */
     Q_INVOKABLE bool listConversations() override;  // TODO: should not be async
 
@@ -166,9 +182,17 @@ public:
      * @return @c true if the request was accepted; @c false if the client is
      *         not initialised.
      *
-     * @note  Asynchronously returns result: @c eventResponse("chatsdkGetConversationResult", data)
+     * @note  When the underlying SDK returns a result message, it is delivered
+     *        asynchronously as: @c eventResponse("chatsdkGetConversationResult", data)
      *   - @c data[0] @c QString — JSON object describing the conversation.
      *   - @c data[1] @c QString — ISO-8601 timestamp.
+     *
+     * @attention On certain internal failures (for example, if no result message
+     *            is produced by the SDK), no @c chatsdkGetConversationResult
+     *            event will be emitted. Callers MUST NOT rely on this signal
+     *            being emitted in all failure cases and should additionally use
+     *            the synchronous return value or their own timeout / error
+     *            handling strategy.
      */
     Q_INVOKABLE bool getConversation(const QString &convoId) override;  // TODO: should not be async
 
@@ -219,9 +243,16 @@ public:
      * @return @c true if the request was accepted; @c false if the client is
      *         not initialised.
      *
-     * @note  Asynchronously returns result: @c eventResponse("chatsdkGetIdentityResult", data)
+     * @note  On success, asynchronously emits: @c eventResponse("chatsdkGetIdentityResult", data)
      *   - @c data[0] @c QString — JSON object containing identity fields.
      *   - @c data[1] @c QString — ISO-8601 timestamp.
+     *
+     * @warning On some failure paths (for example, when no identity data is available
+     *          or an internal error occurs in the underlying SDK), no
+     *          @c chatsdkGetIdentityResult event may be emitted even if this method
+     *          returned @c true. Callers MUST NOT rely on this event always being
+     *          delivered and should implement appropriate timeouts or alternative
+     *          error handling.
      */
     Q_INVOKABLE bool getIdentity() override;  // TODO: Deprecate; This should not be used.
 
