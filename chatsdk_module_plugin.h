@@ -241,7 +241,7 @@ public:
      *   - @c data[2] @c QString — the introduction bundle string to share.
      *   - @c data[3] @c QString — ISO-8601 timestamp.
      */
-    Q_INVOKABLE bool createIntroBundle() override;  // TODO: stopChat should not be async
+    Q_INVOKABLE bool createIntroBundle() override;  // TODO: should not be async
 
     /** @brief Returns the plugin name. */
     QString name() const override { return "chatsdk_module"; }
